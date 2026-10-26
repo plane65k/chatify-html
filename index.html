@@ -1,0 +1,383 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resizable HTML Runner</title>
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font: 14px Arial, sans-serif;
+  background: #111827;
+  color: #f9fafb;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+header {
+  min-height: 56px;
+  padding: 10px 14px;
+  background: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+header strong { margin-right: auto; }
+
+button, select {
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  padding: 9px 12px;
+  background: #374151;
+  color: white;
+  cursor: pointer;
+}
+
+#run { background: #16a34a; border-color: #16a34a; }
+#camera { background: #2563eb; border-color: #2563eb; }
+
+#status {
+  padding: 7px 12px;
+  background: #0b1220;
+  color: #fbbf24;
+  overflow-wrap: anywhere;
+}
+
+#workspace {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#editorPanel { width: 50%; }
+#previewPanel { flex: 1; }
+
+.panelTitle {
+  padding: 10px 12px;
+  background: #1f2937;
+  border-bottom: 1px solid #374151;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+textarea {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  resize: none;
+  border: 0;
+  outline: none;
+  padding: 14px;
+  background: #030712;
+  color: #d1fae5;
+  font: 13px/1.5 monospace;
+  tab-size: 2;
+}
+
+#previewViewport {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  padding: 14px;
+  background: #0b1220;
+}
+
+#previewFrame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 100px;
+  border: 0;
+  background: white;
+}
+
+#previewPanel.device #previewViewport {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+#previewPanel.device #previewFrame {
+  flex: none;
+  height: 100%;
+  box-shadow: 0 0 0 1px #4b5563, 0 10px 30px #0008;
+}
+
+#divider {
+  width: 8px;
+  flex: 0 0 8px;
+  background: #374151;
+  cursor: col-resize;
+  touch-action: none;
+  position: relative;
+}
+
+#divider:hover, #divider.dragging { background: #3b82f6; }
+
+#divider::after {
+  content: "⋮";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #d1d5db;
+  font-size: 20px;
+}
+
+#previewPanel.hidden,
+#editorPanel.hidden,
+#divider.hidden { display: none; }
+
+@media(max-width: 650px) {
+  #workspace { flex-direction: column; }
+  #editorPanel { width: 100%; height: 45%; }
+  #previewPanel { flex: 1; }
+  #divider {
+    width: 100%;
+    height: 8px;
+    flex-basis: 8px;
+    cursor: row-resize;
+  }
+  #divider::after { content: "⋯"; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <strong>HTML Runner</strong>
+  <button id="run">▶ Run</button>
+  <button id="camera">Test Camera</button>
+  <select id="layout" aria-label="Preview layout">
+    <option value="split">Editor + Preview</option>
+    <option value="preview">Preview only</option>
+    <option value="editor">Editor only</option>
+  </select>
+</header>
+
+<div id="status">Ready. Drag the divider to resize the panels.</div>
+
+<div id="workspace">
+  <section id="editorPanel" class="panel">
+    <div class="panelTitle">
+      <span>HTML Editor</span>
+      <button id="resetCode">Reset</button>
+    </div>
+    <textarea id="editor" spellcheck="false"><!DOCTYPE html>
+<html>
+<head>
+  <title>My Website</title>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      padding: 30px;
+    }
+    button {
+      padding: 10px 18px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Hello, world!</h1>
+  <p>Resize the preview to test your website.</p>
+  <button onclick="alert('It works!')">Test Button</button>
+</body>
+</html></textarea>
+  </section>
+
+  <div id="divider" role="separator"
+       aria-label="Resize editor and preview"
+       aria-orientation="vertical"
+       tabindex="0"></div>
+
+  <section id="previewPanel" class="panel">
+    <div class="panelTitle">
+      <span>Live Preview</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <label for="deviceWidth">Width</label>
+        <input id="deviceWidth" type="number" min="200" max="2400"
+          value="1000" style="width:72px;padding:6px">
+        <button id="fullWidth">Fit</button>
+      </div>
+    </div>
+    <div id="previewViewport">
+      <iframe id="previewFrame" title="HTML preview"
+        allow="camera; microphone"
+        sandbox="allow-scripts allow-forms allow-modals allow-pointer-lock allow-same-origin allow-popups"></iframe>
+    </div>
+  </section>
+</div>
+
+<script>
+const editor = document.getElementById("editor");
+const editorPanel = document.getElementById("editorPanel");
+const previewPanel = document.getElementById("previewPanel");
+const previewFrame = document.getElementById("previewFrame");
+const divider = document.getElementById("divider");
+const workspace = document.getElementById("workspace");
+const status = document.getElementById("status");
+const layout = document.getElementById("layout");
+const deviceWidth = document.getElementById("deviceWidth");
+
+const originalCode = editor.value;
+let previewWidth = 1000;
+let dragging = false;
+
+function runHTML() {
+  previewFrame.srcdoc = editor.value;
+  status.textContent = "Preview updated.";
+}
+
+document.getElementById("run").onclick = runHTML;
+
+document.getElementById("resetCode").onclick = () => {
+  editor.value = originalCode;
+  runHTML();
+};
+
+function applyLayout(value) {
+  editorPanel.classList.toggle("hidden", value === "preview");
+  previewPanel.classList.toggle("hidden", value === "editor");
+  divider.classList.toggle("hidden", value !== "split");
+  updateDividerOrientation();
+}
+
+layout.onchange = () => applyLayout(layout.value);
+
+function updateDividerOrientation() {
+  const vertical = window.innerWidth <= 650;
+  divider.setAttribute("aria-orientation",
+    vertical ? "horizontal" : "vertical");
+}
+
+function resizeAt(event) {
+  const rect = workspace.getBoundingClientRect();
+
+  if (window.innerWidth <= 650) {
+    const height = event.clientY - rect.top;
+    editorPanel.style.width = "100%";
+    editorPanel.style.height =
+      Math.max(100, Math.min(rect.height - 100, height)) + "px";
+  } else {
+    const width = event.clientX - rect.left;
+    editorPanel.style.height = "auto";
+    editorPanel.style.width =
+      Math.max(150, Math.min(rect.width - 150, width)) + "px";
+  }
+}
+
+divider.addEventListener("pointerdown", event => {
+  dragging = true;
+  divider.classList.add("dragging");
+  divider.setPointerCapture(event.pointerId);
+  resizeAt(event);
+});
+
+divider.addEventListener("pointermove", event => {
+  if (dragging) resizeAt(event);
+});
+
+function stopDragging() {
+  dragging = false;
+  divider.classList.remove("dragging");
+}
+
+divider.addEventListener("pointerup", stopDragging);
+divider.addEventListener("pointercancel", stopDragging);
+
+divider.addEventListener("keydown", event => {
+  const step = event.shiftKey ? 40 : 10;
+  if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+    event.preventDefault();
+    const rect = editorPanel.getBoundingClientRect();
+    resizeAt({
+      clientX: rect.right + step,
+      clientY: rect.bottom + step
+    });
+  } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+    event.preventDefault();
+    const rect = editorPanel.getBoundingClientRect();
+    resizeAt({
+      clientX: rect.right - step,
+      clientY: rect.bottom - step
+    });
+  }
+});
+
+function updatePreviewWidth() {
+  const value = Number(deviceWidth.value);
+  if (!Number.isFinite(value) || value < 200) return;
+  previewWidth = Math.min(value, 2400);
+  deviceWidth.value = previewWidth;
+  previewPanel.classList.add("device");
+  previewFrame.style.width = previewWidth + "px";
+}
+
+deviceWidth.addEventListener("change", updatePreviewWidth);
+
+document.getElementById("fullWidth").onclick = () => {
+  previewPanel.classList.remove("device");
+  previewFrame.style.width = "100%";
+  deviceWidth.value = Math.round(
+    document.getElementById("previewViewport").clientWidth
+  );
+};
+
+document.getElementById("camera").onclick = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: false
+    });
+
+    const oldVideo = document.getElementById("cameraVideo");
+    if (oldVideo?.srcObject) {
+      oldVideo.srcObject.getTracks().forEach(track => track.stop());
+    }
+
+    let video = oldVideo || document.createElement("video");
+    video.id = "cameraVideo";
+    video.autoplay = true;
+    video.playsInline = true;
+    video.muted = true;
+    video.style.cssText =
+      "position:fixed;right:12px;bottom:12px;width:240px;" +
+      "max-width:45vw;z-index:9999;background:black;border-radius:8px";
+    if (!oldVideo) document.body.appendChild(video);
+
+    video.srcObject = stream;
+    status.textContent = "Camera access granted.";
+  } catch (error) {
+    status.textContent = "Camera error: " +
+      error.name + " — " + error.message +
+      ". The browser or hosting page may block camera access.";
+  }
+};
+
+window.addEventListener("resize", updateDividerOrientation);
+applyLayout("split");
+runHTML();
+</script>
+</body>
+</html>
